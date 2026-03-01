@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>研行记 (RAN) - 交互演示</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --bg-app: #f8fafc;
+            --white: #ffffff;
+            --col-left: 280px;
+            --col-right: 320px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            height: 60px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-sub);
+        }
+        
+        .btn-ghost:hover {
+            background: var(--bg-app);
+            color: var(--text-main);
+        }
+        #continueUploadBtn {
+            display: none;
+        }
+        body.generated-mode #continueUploadBtn {
+            display: inline-flex;
+        }
+        #regenerateBar {
+            display: none;
+            padding: 0.5rem 0 0.75rem;
+        }
+        body.generated-mode #regenerateBar {
+            display: block;
+        }
+        #regenerateBar .btn {
+            padding: 0.4rem 0.9rem;
+            font-size: 0.875rem;
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: var(--col-left, 280px) 4px minmax(0, 1fr) 4px var(--col-right, 320px);
+            overflow: hidden;
+        }
+        body.input-mode main {
+            grid-template-columns: minmax(420px, 1fr) 8px minmax(420px, 1fr) 0 0;
+            background: linear-gradient(180deg, #f5f7fb 0%, #f8fafc 100%);
+            padding: 1.1rem;
+            align-items: start;
+        }
+        body.input-mode .sidebar-right,
+        body.input-mode #resizerRight,
+        body.input-mode #recordContent,
+        body.input-mode #editorToolbar {
+            display: none !important;
+        }
+        body.input-mode #exportMenuBtn {
+            display: none;
+        }
+        body.input-mode .col-resizer {
+            background: transparent;
+            cursor: default;
+            width: 8px;
+        }
+        body.input-mode .sidebar-left,
+        body.input-mode .editor-area {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border: 1px solid #e6ebf3;
+            border-radius: 1rem;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+            padding: 1.15rem 1.1rem;
+            margin: 0;
+            transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+            height: auto;
+            max-height: calc(100vh - 96px);
+        }
+        body.input-mode .sidebar-left:hover,
+        body.input-mode .editor-area:hover {
+            transform: translateY(-2px) scale(1.005);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+            border-color: #d7e3f8;
+        }
+        body.input-mode .sidebar-left {
+            overflow-y: auto;
+        }
+        body.input-mode .editor-area {
+            overflow: visible;
+        }
+        body.input-mode .paper {
+            max-width: none;
+            margin: 0;
+            overflow: visible;
+        }
+        body.input-mode .section-title {
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 0.65rem;
+        }
+        .input-step-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.9rem;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        #assetLead {
+            display: none;
+        }
+        body.input-mode #assetLead {
+            display: block;
+            margin-bottom: 0.9rem;
+            padding: 0.75rem 0.8rem;
+            border-radius: 0.7rem;
+            border: 1px solid #dbeafe;
+            background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+            box-shadow: 0 6px 20px rgba(30, 64, 175, 0.08);
+            font-size: 0.78rem;
+            color: #334155;
+            line-height: 1.55;
+        }
+        body.input-mode .upload-area {
+            border: 1px solid #dbe3ef;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border-radius: 0.9rem;
+            padding: 2.1rem 1rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            margin-bottom: 1rem;
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+        body.input-mode .upload-area:hover {
+            border-color: #93c5fd;
+            background: linear-gradient(180deg, #ffffff 0%, #edf5ff 100%);
+            transform: translateY(-1px) scale(1.01);
+            box-shadow: 0 14px 30px rgba(37, 99, 235, 0.12);
+        }
+        body.input-mode #transcriptInput {
+            height: 120px !important;
+            border-radius: 0.75rem !important;
+            border: 1px solid #dbe3ef !important;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        }
+        body.input-mode .file-list {
+            margin-top: 0.85rem;
+            max-height: 220px;
+            overflow-y: auto;
+            padding-right: 0.2rem;
+        }
+        body.input-mode .file-item {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.72rem;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        #inputHero { display: none; }
+        body.input-mode #inputHero { display: none !important; }
+        body.input-mode #meetingBasicInfo {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            max-width: none;
+            margin: 0;
+            padding: 0.1rem 0.05rem !important;
+            overflow: visible !important;
+        }
+        body.input-mode #meetingBasicInfo .input-step-title {
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin-bottom: 0.9rem !important;
+            line-height: 1.35;
+        }
+        body.input-mode #meetingBasicInfo input,
+        body.input-mode #meetingBasicInfo select {
+            border-radius: 0.6rem !important;
+            border-color: #dbe3ef !important;
+            background: linear-gradient(180deg, #ffffff 0%, #fdfefe 100%) !important;
+            transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+        }
+        body.input-mode #meetingBasicInfo input:hover,
+        body.input-mode #meetingBasicInfo select:hover {
+            border-color: #bfdbfe !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+            transform: translateY(-1px);
+        }
+        body.generated-mode #inputHero {
+            display: none !important;
+        }
+        body.generated-mode main {
+            grid-template-columns: 0 0 minmax(0, 1fr) 4px var(--col-right, 340px);
+        }
+        body.generated-mode .sidebar-left,
+        body.generated-mode #resizerLeft,
+        body.generated-mode #meetingBasicInfo {
+            display: none !important;
+        }
+        body.generated-mode .editor-area {
+            background: linear-gradient(180deg, #f5f7fb 0%, #f8fafc 100%);
+            padding: 1.2rem 1.25rem 1.35rem;
+        }
+        body.generated-mode .paper {
+            max-width: 920px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border: 1px solid #e6ebf3;
+            border-radius: 1rem;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            padding: 1.15rem 1.15rem 1.05rem;
+        }
+        body.generated-mode .record-header {
+            margin-bottom: 1.5rem;
+            padding: 1.25rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e6ebf3;
+            background: linear-gradient(180deg, #fafbff 0%, #ffffff 100%);
+        }
+        body.generated-mode .record-meta {
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-main);
+        }
+        body.generated-mode .content-block {
+            margin-bottom: 1rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            border: 1px solid #e6ebf3;
+            border-radius: 0.85rem;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+            padding: 0.85rem 0.9rem;
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+        body.generated-mode .content-block:hover {
+            transform: translateY(-1px) scale(1.003);
+            border-color: #d6e4fb;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+        }
+        body.generated-mode .block-title {
+            font-size: 1.02rem;
+            margin-bottom: 0.75rem;
+            color: #0f172a;
+        }
+        body.generated-mode .action-item {
+            background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+            border-left: 4px solid #3b82f6;
+            border-radius: 0.72rem;
+            border: 1px solid #dbeafe;
+            box-shadow: none;
+        }
+        body.generated-mode .sidebar-right {
+            background: linear-gradient(180deg, #f5f7fb 0%, #f8fafc 100%);
+            border-left: none;
+            padding: 1.2rem 1rem 1.2rem 0.85rem;
+        }
+        body.generated-mode .preview-card {
+            border: 1px solid #e6ebf3;
+            border-radius: 1rem;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        }
+        body.generated-mode .preview-header {
+            background: transparent;
+            border-bottom: 1px solid #e6ebf3;
+        }
+        body.generated-mode .preview-content {
+            background: #ffffff;
+        }
+
+        .col-resizer {
+            background: rgba(148, 163, 184, 0.6);
+            cursor: col-resize;
+            width: 4px;
+        }
+
+        .col-resizer:hover {
+            background: rgba(59, 130, 246, 0.8);
+        }
+
+        /* Left Sidebar: Assets */
+        .sidebar-left {
+            grid-column: 1 / 2;
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-sub);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 0.5rem;
+            padding: 2rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg-app);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .file-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Center: Editor */
+        .editor-area {
+            grid-column: 3 / 4;
+            padding: 2rem;
+            overflow-y: auto;
+            background: var(--white);
+            position: relative;
+        }
+
+        .paper {
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 100%;
+        }
+        /* contenteditable 默认会有黑色焦点外框（很难看），统一去掉 */
+        #generatedRecord,
+        #paperContent[contenteditable="true"] {
+            outline: none;
+        }
+        #generatedRecord:focus,
+        #paperContent[contenteditable="true"]:focus {
+            outline: none;
+        }
+
+        .record-header {
+            margin-bottom: 2rem;
+            padding: 1.25rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, #fafbff 0%, #ffffff 100%);
+        }
+
+        .record-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            color: var(--text-main);
+            font-size: 0.875rem;
+            margin-top: 0.75rem;
+        }
+        .record-meta .meta-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        .record-meta .meta-label {
+            color: var(--text-sub);
+            font-size: 0.8rem;
+            min-width: 4em;
+        }
+
+        .content-block {
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+
+        .content-block.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .block-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .block-title::before {
+            content: "";
+            display: block;
+            width: 4px;
+            height: 1.2rem;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .action-item {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+            margin-bottom: 0.75rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .tag-red { background: #fee2e2; color: #991b1b; }
+        .tag-yellow { background: #fef3c7; color: #92400e; }
+
+        .ref-link {
+            color: var(--primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            font-weight: 500;
+            text-decoration: none;
+            background: rgba(37, 99, 235, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .ref-link:hover {
+            background: rgba(37, 99, 235, 0.2);
+        }
+
+        /* Right: Preview */
+        .sidebar-right {
+            grid-column: 5 / 6;
+            background: var(--bg-app);
+            border-left: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .preview-card {
+            background: var(--white);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            padding: 0.75rem;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-content {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e2e8f0;
+            color: var(--text-sub);
+            font-size: 0.875rem;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .preview-content.preview-content-scroll {
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .typing-text::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .source-highlight {
+            background: #93c5fd;
+            color: #1e3a8a;
+            border-radius: 0.25rem;
+            padding: 0.15rem 0.25rem;
+            font-weight: 500;
+        }
+        .source-block-body {
+            max-height: 420px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.5rem 0;
+        }
+        .btn-trace {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 999px;
+            border: 1px solid var(--primary);
+            background: #eff6ff;
+            color: var(--primary);
+            cursor: pointer;
+        }
+        .btn-trace:hover {
+            background: #dbeafe;
+        }
+        .trace-target {
+            border-radius: 0.5rem;
+            transition: background-color 0.16s ease, box-shadow 0.16s ease;
+        }
+        .trace-target:hover {
+            background: #f8fbff;
+            box-shadow: inset 0 0 0 1px #bfdbfe;
+            cursor: pointer;
+        }
+        .trace-target.trace-active {
+            background: #eff6ff;
+            box-shadow: inset 0 0 0 1.5px #60a5fa;
+        }
+        .source-block {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .source-block:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .source-block-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .ppt-slide-card {
+            background: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .ppt-slide-card.ppt-slide-card-target {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+        }
+
+        .ppt-slide-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+
+        .ppt-slide-body {
+            font-size: 0.8rem;
+            color: #0f172a;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        /* 整页幻灯片样式：像第三张图那样以图为主 */
+        .ppt-slide-card.ppt-slide-card-fullpage {
+            padding: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .ppt-slide-card-fullpage .ppt-slide-title {
+            margin-bottom: 0.35rem;
+            padding: 0 0.25rem;
+        }
+
+        .ppt-slide-card-fullpage .ppt-slide-body {
+            padding: 0;
+            line-height: 0;
+        }
+
+        .ppt-slide-card-fullpage .ppt-slide-body img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0.5rem;
+            background: #1e293b;
+        }
+
+        .ppt-slide-card-fullpage .ppt-slide-body .ppt-slide-text-only {
+            font-size: 0.75rem;
+            color: #64748b;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            padding: 0.5rem 0.25rem 0 0;
+        }
+
+        .ppt-slide-hint {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background: #f1f5f9;
+            border-radius: 0.25rem;
+        }
+
+        .pdf-page-card {
+            background: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+        .pdf-page-card.pdf-page-card-target {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+        }
+        .pdf-page-card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+        .pdf-page-card-body {
+            font-size: 0.8rem;
+            color: #0f172a;
+            white-space: pre-wrap;
+            line-height: 1.7;
+        }
+        .pdf-page-card-body img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            background: #f1f5f9;
+        }
+        /* 与 PPT 一致：有图时整页图为主，下方为文字 */
+        .pdf-page-card.pdf-page-card-fullpage {
+            padding: 0.5rem 0;
+            overflow: hidden;
+        }
+        .pdf-page-card-fullpage .pdf-page-card-title {
+            margin-bottom: 0.35rem;
+            padding: 0 0.25rem;
+        }
+        .pdf-page-card-fullpage .pdf-page-card-body {
+            padding: 0;
+            line-height: 0;
+        }
+        .pdf-page-card-fullpage .pdf-page-card-body img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 0.5rem;
+            background: #1e293b;
+            margin-bottom: 0;
+        }
+        .pdf-page-card-fullpage .pdf-page-card-body .pdf-page-text-only {
+            font-size: 0.75rem;
+            color: #64748b;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            padding: 0.5rem 0.25rem 0 0;
+        }
+        .pdf-page-hint {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background: #f1f5f9;
+            border-radius: 0.25rem;
+        }
+
+        .export-menu {
+            position: absolute;
+            top: 110%;
+            right: 0;
+            background: #ffffff;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+            padding: 0.25rem 0;
+            font-size: 0.8rem;
+            min-width: 140px;
+            z-index: 20;
+            display: none;
+        }
+
+        .export-menu-item {
+            padding: 0.4rem 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-menu-item:hover {
+            background: #f1f5f9;
+        }
+
+        /* 编辑工具栏：类似 Word */
+        .editor-toolbar-wrap {
+            display: none;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .editor-toolbar-wrap.visible {
+            display: flex;
+        }
+
+        .editor-toolbar-divider {
+            width: 1px;
+            height: 1.5rem;
+            background: var(--border);
+            margin: 0 0.25rem;
+        }
+
+        .editor-toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 0.15rem;
+        }
+
+        .editor-toolbar-btn {
+            min-width: 28px;
+            height: 28px;
+            padding: 0 0.4rem;
+            border: none;
+            border-radius: 0.25rem;
+            background: transparent;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--text-main);
+        }
+
+        .editor-toolbar-btn:hover {
+            background: var(--bg-app);
+        }
+
+        .editor-toolbar-btn.active {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .editor-toolbar-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .editor-toolbar-select {
+            height: 28px;
+            padding: 0 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.25rem;
+            font-size: 0.8rem;
+            background: #fff;
+            color: var(--text-main);
+            min-width: 90px;
+        }
+
+        .editor-toolbar-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .toast-save {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            background: #0f172a;
+            color: #fff;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .toast-save.show {
+            opacity: 1;
+        }
+
+        /* ── Date Picker ── */
+        .dp-popup {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            z-index: 200;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 0.625rem;
+            box-shadow: 0 8px 28px rgba(15,23,42,0.13);
+            padding: 0.875rem;
+            width: 244px;
+            user-select: none;
+        }
+        .dp-popup.open { display: block; }
+        .dp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.625rem; }
+        .dp-nav { background: none; border: none; cursor: pointer; width: 28px; height: 28px;
+                  border-radius: 50%; font-size: 0.9rem; color: var(--text-sub);
+                  display: flex; align-items: center; justify-content: center; }
+        .dp-nav:hover { background: var(--bg-app); color: var(--text-main); }
+        .dp-title { font-size: 0.875rem; font-weight: 600; cursor: default; }
+        .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 0.25rem; }
+        .dp-weekday { text-align: center; font-size: 0.68rem; color: var(--text-sub); font-weight: 600; padding: 0.15rem 0; }
+        .dp-day { width: 100%; aspect-ratio: 1; border: none; background: none; cursor: pointer;
+                  border-radius: 50%; font-size: 0.78rem; color: var(--text-main);
+                  display: flex; align-items: center; justify-content: center; }
+        .dp-day:hover:not(:disabled):not(.empty) { background: var(--primary-light); color: var(--primary); }
+        .dp-day.selected { background: var(--primary); color: #fff; font-weight: 600; }
+        .dp-day.today:not(.selected) { font-weight: 700; color: var(--primary); }
+        .dp-day.other-month { color: #cbd5e1; }
+        .dp-day.empty { cursor: default; }
+        .dp-time-row { display: flex; align-items: center; gap: 0.5rem;
+                       margin-top: 0.625rem; padding-top: 0.625rem; border-top: 1px solid var(--border); }
+        .dp-time-label { font-size: 0.75rem; color: var(--text-sub); flex-shrink: 0; }
+        .dp-spin { display: flex; align-items: center; gap: 0.2rem; }
+        .dp-spin-btn { background: none; border: 1px solid var(--border); border-radius: 0.25rem;
+                       width: 20px; height: 20px; cursor: pointer; font-size: 0.65rem; color: var(--text-sub);
+                       display: flex; align-items: center; justify-content: center; }
+        .dp-spin-btn:hover { background: var(--bg-app); color: var(--text-main); }
+        .dp-spin-val { width: 28px; text-align: center; font-size: 0.85rem; font-weight: 600;
+                       border: 1px solid var(--border); border-radius: 0.25rem; padding: 0.1rem 0; }
+        .dp-colon { font-weight: 700; font-size: 0.9rem; color: var(--text-sub); }
+        .dp-confirm { margin-top: 0.625rem; width: 100%; padding: 0.35rem;
+                      background: var(--primary); color: #fff; border: none; border-radius: 0.375rem;
+                      font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+        .dp-confirm:hover { background: #1d4ed8; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span>📘</span> 研行记 Demo
+        </div>
+        <div class="header-actions" style="position: relative;">
+            <button class="btn btn-ghost" onclick="window.location.href='index.html'">返回主页</button>
+            <button class="btn btn-ghost" id="continueUploadBtn">继续上传素材</button>
+            <button class="btn btn-primary" id="generateBtn" disabled>+ 生成组会记录</button>
+            <button class="btn btn-ghost" id="exportMenuBtn" disabled>导出 ▾</button>
+            <div class="export-menu" id="exportMenu">
+                <div class="export-menu-item" id="exportPdfAction">
+                    <span>📄</span><span>导出为 PDF</span>
+                </div>
+                <div class="export-menu-item" id="exportWordAction">
+                    <span>📝</span><span>导出为 Word</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Left: Upload -->
+        <aside class="sidebar-left">
+    <div class="input-step-title">步骤 1 · 素材管理</div>
+    <div id="assetLead">
+        先上传素材，再填写信息并生成纪要。
+    </div>
+            
+    <div class="upload-area" id="uploadArea">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📂</div>
+        <div style="font-size: 0.875rem; font-weight: 500;">点击上传 PPT/文献/Word</div>
+        <div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.25rem;">支持 .pptx, .pdf, .docx（语音请粘贴转写或上传转写 Word）</div>
+    </div>
+
+    <input id="fileInput" type="file" multiple
+           accept=".ppt,.pptx,.pdf,.doc,.docx"
+           style="display: none;">
+
+    <div style="margin-top: 1rem;">
+        <div style="font-size: 0.75rem; color: var(--text-sub); margin-bottom: 0.25rem;">
+            会议转写内容
+        </div>
+        <textarea id="transcriptInput"
+                  placeholder="粘贴会议转写全文，或上传 Word 转写文件（二选一）"
+                  style="width: 100%; height: 120px; font-size: 0.8rem; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border); resize: none;"></textarea>
+    </div>
+
+    <div class="file-list" id="fileList"></div>
+</aside>
+
+        <div class="col-resizer" id="resizerLeft"></div>
+
+        <!-- Center: Editor -->
+        <section class="editor-area">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div style="color: var(--text-sub); font-size: 0.875rem;" id="loadingText">正在解析多模态数据...</div>
+            </div>
+
+            <div id="editorToolbar" class="editor-toolbar-wrap">
+                <div class="editor-toolbar-group">
+                    <button type="button" id="undoBtn" class="editor-toolbar-btn" title="撤销 (Ctrl+Z)">↶ 撤销</button>
+                    <button type="button" id="saveBtn" class="editor-toolbar-btn" title="保存">💾 保存</button>
+                </div>
+                <div class="editor-toolbar-divider"></div>
+                <div class="editor-toolbar-group">
+                    <select id="fontSelect" class="editor-toolbar-select" title="字体">
+                        <option value="inherit">字体</option>
+                        <option value="SimSun, serif">宋体</option>
+                        <option value="SimHei, sans-serif">黑体</option>
+                        <option value="Microsoft YaHei, sans-serif">微软雅黑</option>
+                        <option value="KaiTi, serif">楷体</option>
+                        <option value="FangSong, serif">仿宋</option>
+                        <option value="-apple-system, BlinkMacSystemFont, sans-serif">系统默认</option>
+                    </select>
+                    <select id="fontSizeSelect" class="editor-toolbar-select" title="字号">
+                        <option value="">字号</option>
+                        <option value="1">10.5pt</option>
+                        <option value="2">12pt</option>
+                        <option value="3">14pt</option>
+                        <option value="4">16pt</option>
+                        <option value="5">18pt</option>
+                        <option value="6">24pt</option>
+                        <option value="7">36pt</option>
+                    </select>
+                </div>
+                <div class="editor-toolbar-divider"></div>
+                <div class="editor-toolbar-group">
+                    <button type="button" id="boldBtn" class="editor-toolbar-btn" title="加粗 (Ctrl+B)"><b>B</b></button>
+                    <button type="button" id="italicBtn" class="editor-toolbar-btn" title="斜体 (Ctrl+I)"><i>I</i></button>
+                    <button type="button" id="highlightBtn" class="editor-toolbar-btn" title="高亮">🖍 高亮</button>
+                </div>
+            </div>
+            <div id="toastSave" class="toast-save">已保存</div>
+            <div id="regenerateBar" style="margin-left: 0;">
+                <button type="button" class="btn btn-primary" id="regenerateBtn">🔄 重新生成</button>
+            </div>
+
+           <div class="paper" id="paperContent">
+    <div id="inputHero">
+        <h3>开始生成组会纪要</h3>
+        <p>先在左侧上传 PPT/文献/转写 Word 或粘贴转写全文，再填写本次会议时间和学科信息。点击右上角“生成组会记录”后，页面会自动切换到纪要阅读与溯源模式。</p>
+    </div>
+    <!-- 组会基础信息：独立于生成结果，不被 innerHTML 替换，保证会议类型/学科选择始终可用 -->
+    <div id="meetingBasicInfo" style="border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem 1.25rem; margin-bottom: 1.5rem; background: #f9fafb;">
+        <div class="input-step-title">
+            步骤 2 · 组会基础信息
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            <!-- 1. 组会时间 -->
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-sub);">组会时间</label>
+                <div style="position: relative; margin-top: 0.25rem;">
+                    <input id="meetingTime" type="text" readonly placeholder="点击选择日期和时间"
+                           style="width: 100%; padding: 0.4rem 2rem 0.4rem 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border); font-size: 0.85rem; cursor: pointer; background: white;">
+                    <span style="position:absolute; right:0.5rem; top:50%; transform:translateY(-50%); font-size:0.9rem; pointer-events:none;">📅</span>
+                    <div class="dp-popup" id="dpPopup">
+                        <div class="dp-header">
+                            <button class="dp-nav" id="dpPrev">‹</button>
+                            <span class="dp-title" id="dpTitle"></span>
+                            <button class="dp-nav" id="dpNext">›</button>
+                        </div>
+                        <div class="dp-grid" id="dpGrid"></div>
+                        <div class="dp-time-row">
+                            <span class="dp-time-label">时间</span>
+                            <div class="dp-spin">
+                                <button class="dp-spin-btn" id="hourUp">▲</button>
+                                <div class="dp-spin-val" id="hourVal">09</div>
+                                <button class="dp-spin-btn" id="hourDown">▼</button>
+                            </div>
+                            <span class="dp-colon">:</span>
+                            <div class="dp-spin">
+                                <button class="dp-spin-btn" id="minUp">▲</button>
+                                <div class="dp-spin-val" id="minVal">00</div>
+                                <button class="dp-spin-btn" id="minDown">▼</button>
+                            </div>
+                        </div>
+                        <button class="dp-confirm" id="dpConfirm">确认</button>
+                    </div>
+                </div>
+            </div>
+            <input id="transcriptSummary" type="hidden" value="">
+            <!-- 2. 会议类型/学科 -->
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-sub);">会议类型 / 学科</label>
+                <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.25rem;">
+                    <select id="meetingTypeSelect" style="width: 100%; padding: 0.4rem 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border); font-size: 0.85rem;">
+                        <option value="">由 AI 自动识别</option>
+                        <option value="人文社科">人文社科</option>
+                        <option value="实验工科">实验工科</option>
+                        <option value="理论数理">理论数理</option>
+                        <option value="通用组会">通用组会</option>
+                    </select>
+                    <span style="font-size: 0.74rem; color: var(--text-sub);">或填写具体学科（可选）</span>
+                    <input id="disciplineInput" type="text" placeholder="输入自己的学科，如：农业经济、计算机视觉"
+                           style="width: 100%; padding: 0.4rem 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border); font-size: 0.85rem;">
+                </div>
+            </div>
+            <!-- 3. 参与人（逗号隔开，精准识别人名） -->
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-sub);">参与人</label>
+                <input id="participantsInput" type="text" placeholder="用逗号隔开，如：张三，李四，王老师（选填）"
+                       style="width: 100%; padding: 0.4rem 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border); font-size: 0.85rem; margin-top: 0.25rem;">
+                <span style="font-size: 0.7rem; color: var(--text-sub); display: block; margin-top: 0.2rem;">多人请用英文或中文逗号隔开，便于精准识别人名</span>
+            </div>
+            <!-- 4. 汇报人（逗号隔开，输出按此名单显示） -->
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-sub);">汇报人</label>
+                <input id="reportersInput" type="text" placeholder="用逗号隔开，如：张三，李四，王五，杨六（选填）"
+                       style="width: 100%; padding: 0.4rem 0.5rem; border-radius: 0.375rem; border: 1px solid var(--border); font-size: 0.85rem; margin-top: 0.25rem;">
+                <span style="font-size: 0.7rem; color: var(--text-sub); display: block; margin-top: 0.2rem;">多人请用英文或中文逗号隔开，纪要将按「张三」「李四」「王五」「杨六」顺序输出</span>
+            </div>
+        </div>
+        <!-- 角色和主题由 AI 自动识别，无需手动填写 -->
+        <input type="hidden" id="meetingTopic" value="">
+        <input type="hidden" id="meetingRoles" value="">
+    </div>
+
+    <!-- 仅此区域会被生成结果替换；组会基础信息在上方，不会被覆盖 -->
+    <div id="recordContent">
+        <div class="empty-state" id="emptyState">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.2;">📝</div>
+            <p style="color: var(--text-sub);">请先在左侧上传 PPT/文献或粘贴转写，然后点击右上角“生成”按钮</p>
+        </div>
+    </div>
+</div> 
+        </section>
+
+        <div class="col-resizer" id="resizerRight"></div>
+
+        <!-- Right: Preview -->
+        <aside class="sidebar-right">
+            <div class="section-title">素材溯源</div>
+            <div class="preview-card">
+                <div class="preview-header">
+                    <span id="previewTitle">无内容</span>
+                    <span style="font-size: 0.75rem; color: var(--text-sub);" id="previewMeta">-</span>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <div style="text-align: center; padding: 1rem;">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.3;">👁️</div>
+                        <div style="font-size: 0.75rem; color: var(--text-sub);">鼠标悬停纪要中的句子<br>在此处查看 PPT / PDF / 语音转录出处</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+<script>
+    // 上线时改为你的后端地址，例如：'https://your-backend.railway.app' 或 'https://api.yourdomain.com'
+    const API_BASE = window.API_BASE || 'http://127.0.0.1:8003';
+    const state = {
+        files: [],
+        isGenerating: false,
+        hasGenerated: false,
+        selectedMeetingType: '',
+        selectedDiscipline: ''
+    };
+
+    let currentRecord = null;
+    let lastGeneratedHTML = '';
+    let savedHTML = '';
+    let initialHTML = '';
+    let autosaveTimer = null;
+    const undoHistory = [];
+    const UNDO_MAX = 50;
+
+    const uploadArea = document.getElementById('uploadArea');
+    const fileList = document.getElementById('fileList');
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    const paperContent = document.getElementById('paperContent');
+    const recordContent = document.getElementById('recordContent');
+    const emptyState = document.getElementById('emptyState');
+    /** 生成后的可编辑正文容器，仅渲染后存在；用于 innerHTML/contenteditable/撤销/导出 */
+    function getRecordBody() { return document.getElementById('generatedRecord'); }
+    const previewContent = document.getElementById('previewContent');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewMeta = document.getElementById('previewMeta');
+    const editorToolbar = document.getElementById('editorToolbar');
+    const saveBtn = document.getElementById('saveBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const exportMenuBtn = document.getElementById('exportMenuBtn');
+    const exportMenu = document.getElementById('exportMenu');
+    const exportPdfAction = document.getElementById('exportPdfAction');
+    const exportWordAction = document.getElementById('exportWordAction');
+    const continueUploadBtn = document.getElementById('continueUploadBtn');
+    const regenerateBtn = document.getElementById('regenerateBtn');
+    const mainLayout = document.querySelector('main');
+    const resizerLeft = document.getElementById('resizerLeft');
+    const resizerRight = document.getElementById('resizerRight');
+
+    let isResizing = false;
+    let resizeTarget = null;
+    let startX = 0;
+    let startWidthLeft = 0;
+    let startWidthRight = 0;
+
+    function setGeneratedMode(enabled) {
+        const on = !!enabled;
+        document.body.classList.toggle('generated-mode', on);
+        document.body.classList.toggle('input-mode', !on);
+    }
+    // 初始进入页面：仅显示上传素材 + 基本信息
+    setGeneratedMode(false);
+
+    // 基础信息输入
+    const meetingTime = document.getElementById('meetingTime');
+    const transcriptSummary = document.getElementById('transcriptSummary');
+    (function initMeetingTypeState() {
+        const sel = document.getElementById('meetingTypeSelect');
+        const inp = document.getElementById('disciplineInput');
+        if (sel) {
+            state.selectedMeetingType = sel.value || '';
+            sel.addEventListener('change', () => { state.selectedMeetingType = sel.value || ''; });
+        }
+        if (inp) {
+            state.selectedDiscipline = (inp.value || '').trim();
+            inp.addEventListener('input', () => { state.selectedDiscipline = (inp.value || '').trim(); });
+            inp.addEventListener('change', () => { state.selectedDiscipline = (inp.value || '').trim(); });
+        }
+    })();
+
+    // ── Date Picker ──────────────────────────────────────────
+    (function initDatePicker() {
+        const MONTHS = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+        const WEEKDAYS = ['日','一','二','三','四','五','六'];
+        const popup = document.getElementById('dpPopup');
+        const title = document.getElementById('dpTitle');
+        const grid  = document.getElementById('dpGrid');
+        const hourVal = document.getElementById('hourVal');
+        const minVal  = document.getElementById('minVal');
+
+        const now = new Date();
+        let cur = { year: now.getFullYear(), month: now.getMonth() }; // 0-indexed month
+        let sel = { year: now.getFullYear(), month: now.getMonth(), day: now.getDate(),
+                    hour: 9, min: 0 };
+
+        function pad(n) { return String(n).padStart(2,'0'); }
+
+        function renderCalendar() {
+            title.textContent = `${cur.year} 年 ${MONTHS[cur.month]}`;
+            grid.innerHTML = '';
+            WEEKDAYS.forEach(d => {
+                const el = document.createElement('div');
+                el.className = 'dp-weekday'; el.textContent = d;
+                grid.appendChild(el);
+            });
+            const firstDay = new Date(cur.year, cur.month, 1).getDay();
+            const daysInMonth = new Date(cur.year, cur.month + 1, 0).getDate();
+            const daysInPrev  = new Date(cur.year, cur.month, 0).getDate();
+            // leading blanks from previous month
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const btn = document.createElement('button');
+                btn.className = 'dp-day other-month';
+                btn.textContent = daysInPrev - i;
+                btn.disabled = true;
+                grid.appendChild(btn);
+            }
+            for (let d = 1; d <= daysInMonth; d++) {
+                const btn = document.createElement('button');
+                btn.className = 'dp-day';
+                btn.textContent = d;
+                const isToday = d === now.getDate() && cur.month === now.getMonth() && cur.year === now.getFullYear();
+                const isSelected = d === sel.day && cur.month === sel.month && cur.year === sel.year;
+                if (isToday) btn.classList.add('today');
+                if (isSelected) btn.classList.add('selected');
+                btn.addEventListener('click', () => {
+                    sel.year = cur.year; sel.month = cur.month; sel.day = d;
+                    renderCalendar();
+                });
+                grid.appendChild(btn);
+            }
+            hourVal.textContent = pad(sel.hour);
+            minVal.textContent  = pad(sel.min);
+        }
+
+        document.getElementById('dpPrev').addEventListener('click', () => {
+            cur.month--; if (cur.month < 0) { cur.month = 11; cur.year--; }
+            renderCalendar();
+        });
+        document.getElementById('dpNext').addEventListener('click', () => {
+            cur.month++; if (cur.month > 11) { cur.month = 0; cur.year++; }
+            renderCalendar();
+        });
+        document.getElementById('hourUp').addEventListener('click',   () => { sel.hour = (sel.hour + 1) % 24; renderCalendar(); });
+        document.getElementById('hourDown').addEventListener('click', () => { sel.hour = (sel.hour + 23) % 24; renderCalendar(); });
+        document.getElementById('minUp').addEventListener('click',    () => { sel.min = (sel.min + 5) % 60; renderCalendar(); });
+        document.getElementById('minDown').addEventListener('click',  () => { sel.min = (sel.min + 55) % 60; renderCalendar(); });
+
+        document.getElementById('dpConfirm').addEventListener('click', () => {
+            const dateStr = `${sel.year}-${pad(sel.month + 1)}-${pad(sel.day)} ${pad(sel.hour)}:${pad(sel.min)}`;
+            meetingTime.value = dateStr;
+            popup.classList.remove('open');
+        });
+
+        // 输入框只负责“打开”日历，不做 toggle，避免误触关闭
+        meetingTime.addEventListener('click', () => {
+            if (!popup.classList.contains('open')) {
+                cur = { year: sel.year, month: sel.month };
+                renderCalendar();
+                popup.classList.add('open');
+            }
+        });
+        // 不再监听“点击外部自动关闭”，仅在“确认”按钮时关闭
+
+        renderCalendar();
+    })();
+    // ─────────────────────────────────────────────────────────
+
+    // 新增：真实文件选择
+    const fileInput = document.getElementById('fileInput');
+    const transcriptInput = document.getElementById('transcriptInput');
+
+    const originalPaperHTML = paperContent ? paperContent.innerHTML : '';
+    const fontSelect = document.getElementById('fontSelect');
+    const fontSizeSelect = document.getElementById('fontSizeSelect');
+    const boldBtn = document.getElementById('boldBtn');
+    const italicBtn = document.getElementById('italicBtn');
+    const highlightBtn = document.getElementById('highlightBtn');
+    const toastSave = document.getElementById('toastSave');
+
+    // 点击上传区域 -> 打开文件选择框
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 选择文件后，显示在列表，并保存到 state（不支持音频，仅支持 PPT/PDF/Word）
+    // 生成后继续上传时为叠加，否则为替换
+    fileInput.addEventListener('change', () => {
+        const allFiles = Array.from(fileInput.files);
+        const audioExts = ['.mp3', '.wav', '.m4a'];
+        const files = allFiles.filter(f => !audioExts.some(ext => f.name.toLowerCase().endsWith(ext)));
+        if (allFiles.length > 0 && files.length < allFiles.length) {
+            console.warn('已忽略音频文件，请使用粘贴转写或上传转写 Word');
+        }
+        if (state.hasGenerated && files.length > 0) {
+            state.files = state.files.concat(files);
+        } else {
+            state.files = files;
+        }
+        fileInput.value = '';
+        refreshFileList();
+        if (state.files.length > 0) {
+            generateBtn.disabled = false;
+            uploadArea.style.opacity = '0.5';
+            uploadArea.style.cursor = 'default';
+            uploadArea.innerHTML = '<div style="color: var(--primary);">✅ 已选择 ' + state.files.length + ' 个文件 <span style="color: var(--text-sub); font-weight: normal;">（可点击本区或「继续上传素材」继续添加）</span></div>';
+        } else {
+            uploadArea.style.opacity = '1';
+            uploadArea.style.cursor = 'pointer';
+            uploadArea.innerHTML = '<div style="font-size: 2rem; margin-bottom: 0.5rem;">📂</div><div style="font-size: 0.875rem; font-weight: 500;">点击上传 PPT/文献/Word</div><div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.25rem;">支持 .pptx, .pdf, .docx（语音请粘贴转写或上传转写 Word）</div>';
+            generateBtn.disabled = true;
+        }
+    });
+
+    if (continueUploadBtn) {
+        continueUploadBtn.addEventListener('click', () => {
+            setGeneratedMode(false);
+            // 重置生成状态，确保点击「生成组会记录」能重新生成（避免上次请求挂起导致一直没反应）
+            state.isGenerating = false;
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+            if (generateBtn) {
+                generateBtn.textContent = '+ 生成组会记录';
+                generateBtn.disabled = (state.files.length === 0);
+            }
+        });
+    }
+
+    function getFileIcon(file) {
+        const name = file.name.toLowerCase();
+        if (name.endsWith('.ppt') || name.endsWith('.pptx')) return '📊';
+        if (name.endsWith('.pdf')) return '📄';
+        if (name.endsWith('.doc') || name.endsWith('.docx')) return '📝';
+        return '📁';
+    }
+
+    generateBtn.addEventListener('click', () => {
+        if (state.isGenerating) return;
+        // 立即显示加载，避免“没反应”的错觉
+        loadingOverlay.style.display = 'flex';
+        loadingText.textContent = '正在准备...';
+        startGenerationWithAPI();
+    });
+    if (regenerateBtn) {
+        regenerateBtn.addEventListener('click', () => {
+            if (state.isGenerating) return;
+            startGenerationWithAPI();
+        });
+    }
+
+    function refreshFileList() {
+        fileList.innerHTML = '';
+        state.files.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <span class="file-icon">${getFileIcon(file)}</span>
+                <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</span>
+                <span class="file-remove" data-index="${index}" title="移除" style="cursor:pointer;color:#ef4444;font-size:0.75rem;padding:0 0.35rem;">移除</span>
+            `;
+            const removeBtn = item.querySelector('.file-remove');
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                state.files.splice(index, 1);
+                refreshFileList();
+                if (state.files.length === 0) {
+                    uploadArea.style.opacity = '1';
+                    uploadArea.style.cursor = 'pointer';
+                    uploadArea.innerHTML = '<div style="font-size: 2rem; margin-bottom: 0.5rem;">📂</div><div style="font-size: 0.875rem; font-weight: 500;">点击上传 PPT/文献/Word</div><div style="font-size: 0.75rem; color: var(--text-sub); margin-top: 0.25rem;">支持 .pptx, .pdf, .docx（语音请粘贴转写或上传转写 Word）</div>';
+                    generateBtn.disabled = true;
+                } else {
+                    uploadArea.innerHTML = '<div style="color: var(--primary);">✅ 已选择 ' + state.files.length + ' 个文件 <span style="color: var(--text-sub); font-weight: normal;">（可点击本区或「继续上传素材」继续添加）</span></div>';
+                }
+            });
+            fileList.appendChild(item);
+        });
+    }
+
+    async function startGenerationWithAPI() {
+        state.isGenerating = true;
+        generateBtn.disabled = true;
+        loadingOverlay.style.display = 'flex';
+        emptyState.style.display = 'none';
+        loadingText.textContent = '正在上传并解析素材...';
+
+        const time = (meetingTime && meetingTime.value) ? meetingTime.value.trim() : '';
+
+        if (!time) {
+            alert('请先选择组会时间');
+            resetAfterCancel();
+            return;
+        }
+
+        const hasTranscript = (transcriptInput && transcriptInput.value && transcriptInput.value.trim()) || (transcriptSummary && transcriptSummary.value && transcriptSummary.value.trim());
+        if (!hasTranscript && (!state.files || state.files.length === 0)) {
+            alert('请至少上传一份素材（PPT/文献/转写 Word）或粘贴会议转写内容后再生成。');
+            resetAfterCancel();
+            return;
+        }
+
+        const meetingTypeSelect = document.getElementById('meetingTypeSelect');
+        const disciplineInput = document.getElementById('disciplineInput');
+        const participantsInput = document.getElementById('participantsInput');
+        const reportersInput = document.getElementById('reportersInput');
+        function parseNameList(val) {
+            if (!val || typeof val !== 'string') return [];
+            return val.trim().split(/[,，、\s]+/).map(s => s.trim()).filter(Boolean);
+        }
+        const participantsList = parseNameList(participantsInput && participantsInput.value);
+        const reportersList = parseNameList(reportersInput && reportersInput.value);
+        const formData = new FormData();
+        formData.append('time', time);
+        formData.append('topic', '');
+        formData.append('roles', JSON.stringify(participantsList));
+        formData.append('reporters', JSON.stringify(reportersList));
+        formData.append('meeting_type', (meetingTypeSelect && meetingTypeSelect.value) ? meetingTypeSelect.value : (state.selectedMeetingType || ''));
+        formData.append('discipline', (disciplineInput && disciplineInput.value) ? disciplineInput.value.trim() : (state.selectedDiscipline || ''));
+
+        formData.append('transcript', (transcriptInput && transcriptInput.value) || (transcriptSummary && transcriptSummary.value) || '');
+
+        state.files.forEach(file => {
+            formData.append('files', file);
+        });
+
+        try {
+            setTimeout(() => { loadingText.textContent = '正在识别 PPT / 文献文本...'; }, 1000);
+            setTimeout(() => { loadingText.textContent = '正在构建科研证据链与行动项...'; }, 2000);
+            setTimeout(() => { loadingText.textContent = '正在调用大模型生成高价值组会记录...'; }, 3000);
+
+            const resp = await fetch(API_BASE + '/process-meeting', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!resp.ok) {
+                throw new Error('后端接口返回错误：' + resp.status);
+            }
+
+            const data = await resp.json();
+            renderRecordFromData(data);
+            setGeneratedMode(true);
+            state.hasGenerated = true;
+            generateBtn.textContent = '✅ 生成完成';
+            if (exportMenuBtn) {
+                exportMenuBtn.disabled = false;
+            }
+        } catch (e) {
+            console.error(e);
+            alert('生成失败，请检查后端是否启动、依赖是否安装、OpenRouter Key 是否配置正确。');
+            generateBtn.disabled = false;
+        } finally {
+            state.isGenerating = false;
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    function resetAfterCancel() {
+        state.isGenerating = false;
+        loadingOverlay.style.display = 'none';
+        generateBtn.disabled = false;
+    }
+
+    function setupResizer(resizer, side) {
+        if (!resizer) return;
+        resizer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isResizing = true;
+            resizeTarget = side;
+            startX = e.clientX;
+            const styles = window.getComputedStyle(mainLayout);
+            const cols = styles.gridTemplateColumns.split(' ');
+            const left = parseFloat(cols[0]);
+            const right = parseFloat(cols[4]);
+            startWidthLeft = left;
+            startWidthRight = right;
+            document.body.style.userSelect = 'none';
+        });
+    }
+
+    setupResizer(resizerLeft, 'left');
+    setupResizer(resizerRight, 'right');
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const dx = e.clientX - startX;
+        const minWidth = 160;
+        const maxWidth = 600;
+        if (resizeTarget === 'left') {
+            let newLeft = startWidthLeft + dx;
+            newLeft = Math.max(minWidth, Math.min(maxWidth, newLeft));
+            document.documentElement.style.setProperty('--col-left', newLeft + 'px');
+        } else if (resizeTarget === 'right') {
+            let newRight = startWidthRight - dx;
+            newRight = Math.max(minWidth, Math.min(maxWidth, newRight));
+            document.documentElement.style.setProperty('--col-right', newRight + 'px');
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isResizing) return;
+        isResizing = false;
+        resizeTarget = null;
+        document.body.style.userSelect = '';
+    });
+
+    function renderRecordFromData(data) {
+        currentRecord = data;
+        let html = '';
+
+        const TYPE_BADGE = {
+            '人文社科': { emoji: '👤', color: '#6d28d9', bg: '#ede9fe' },
+            '实验工科': { emoji: '🔬', color: '#0369a1', bg: '#e0f2fe' },
+            '理论数理': { emoji: '📐', color: '#b45309', bg: '#fef3c7' },
+            '通用组会': { emoji: '📋', color: '#374151', bg: '#f3f4f6' },
+        };
+        const displayLabel = (data.user_selected_meeting_type || data.user_selected_discipline || data.meeting_type || '').trim();
+        const meetingType = (data.user_selected_meeting_type || data.meeting_type || '').trim();
+        const badge = TYPE_BADGE[meetingType] || { emoji: '🎓', color: '#374151', bg: '#f3f4f6' };
+        const typeBadgeHtml = displayLabel
+            ? `<span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.8rem;font-weight:600;
+                            padding:0.35rem 0.75rem;border-radius:999px;
+                            background:${badge.bg};color:${badge.color};margin-bottom:0.75rem;">
+                   ${badge.emoji} ${displayLabel}
+               </span>`
+            : '';
+
+        const rolesDisplay = (data.basic_info?.roles || []).filter(Boolean).join('、') || '';
+        html += `
+            <div class="record-header content-block">
+                <div class="block-title" style="font-size:0.8rem;color:var(--text-sub);margin-bottom:0.5rem;">一、组会基础信息</div>
+                ${typeBadgeHtml}
+                <h1 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0; line-height: 1.4;">${data.basic_info?.topic || '组会记录'}</h1>
+                <div class="record-meta">
+                    <div class="meta-row"><span class="meta-label">会议时间</span><span>${data.basic_info?.time || ''}</span></div>
+                    <div class="meta-row"><span class="meta-label">参与人</span><span>${rolesDisplay || '—'}</span></div>
+                </div>
+            </div>
+        `;
+
+        const SECTION_TITLE = {
+            '人文社科': '论文讨论要点',
+            '实验工科': '实验汇报要点',
+            '理论数理': '理论推进要点',
+            '通用组会': '本次组会要点',
+        };
+        const sectionTitleLabel = SECTION_TITLE[meetingType] || '核心讨论要点';
+
+        const byReporter = (data.by_reporter || []).filter(b => b);
+        const hasByReporterContent = byReporter.some(b => (b.key_points && b.key_points.length) || (b.action_items && b.action_items.length) || (b.advisor_feedback && b.advisor_feedback.length));
+        const hasFlatContent = (data.key_points && data.key_points.length) || (data.advisor_feedback && data.advisor_feedback.length) || (data.action_items && data.action_items.length);
+
+        if (byReporter.length > 0) {
+            html += `<div class="content-block"><div class="block-title">二、核心讨论要点</div></div>`;
+            byReporter.forEach((block, repIdx) => {
+                const repName = block.reporter || '汇报人';
+                const kpList = block.key_points || [];
+                html += `<div class="content-block"><div class="block-title" style="font-size:0.9rem;color:#475569;">${repName}</div>`;
+                if (kpList.length > 0) {
+                    html += `<ul style="padding-left: 1.5rem; line-height: 1.8; color: #334155;">`;
+                    kpList.forEach((kp, idx) => {
+                        const hasEv = kp.evidence && kp.evidence.length;
+                        const traceAttrs = hasEv
+                            ? ` class="trace-target" data-trace-type="by" data-reporter-index="${repIdx}" data-section="key_points" data-item-index="${idx}"`
+                            : '';
+                        const isEmptyPlaceholder = (kp.title || '').indexOf('未识别到该汇报人') !== -1;
+                        html += `<li${traceAttrs} style="margin-bottom: 0.75rem; padding: 0.2rem 0.35rem;${isEmptyPlaceholder ? ' color:#94a3b8; font-style:italic;' : ''}"><strong>${kp.title || ''}</strong>${kp.detail || ''}</li>`;
+                    });
+                    html += `</ul>`;
+                } else {
+                    html += `<p style="color:#94a3b8; font-size:0.875rem; font-style:italic; margin:0.5rem 0;">（未识别到该汇报人相关内容）</p>`;
+                }
+                html += `</div>`;
+            });
+            html += `<div class="content-block"><div class="block-title">三、导师反馈与行动项</div></div>`;
+            byReporter.forEach((block, repIdx) => {
+                const repName = block.reporter || '汇报人';
+                const hasFb = (block.advisor_feedback || []).length > 0;
+                const hasAi = (block.action_items || []).length > 0;
+                html += `<div class="content-block"><div class="block-title" style="font-size:0.9rem;color:#475569;">${repName}</div>`;
+                if (hasFb) {
+                    block.advisor_feedback.forEach((fb, fbIdx) => {
+                        const hasEv = fb.evidence && fb.evidence.length;
+                        const traceAttrs = hasEv
+                            ? ` class="trace-target" data-trace-type="by" data-reporter-index="${repIdx}" data-section="advisor_feedback" data-item-index="${fbIdx}"`
+                            : '';
+                        html += `<p${traceAttrs} style="margin-bottom: 0.5rem; padding: 0.2rem 0.35rem;"><strong>${fb.speaker || '导师'}：</strong>${fb.content || ''}</p>`;
+                    });
+                }
+                if (hasAi) {
+                    block.action_items.forEach((item, idx) => {
+                        let levelText = item.level === 'RED' ? '🔴 必须修改' : item.level === 'YELLOW' ? '🟡 建议性意见' : item.level === 'GREEN' ? '🟢 探索性讨论' : (item.level || '');
+                        const hasEv = item.evidence && item.evidence.length;
+                        const traceAttrs = hasEv
+                            ? ` class="action-item trace-target" data-trace-type="by" data-reporter-index="${repIdx}" data-section="action_items" data-item-index="${idx}"`
+                            : ` class="action-item"`;
+                        html += `<div${traceAttrs} style="margin-bottom: 0.75rem; padding: 0.35rem 0.4rem;"><div style="margin-bottom: 0.5rem;"><span>${levelText}</span></div><p style="font-size: 0.9rem; margin-bottom: 0.5rem;">${item.description || ''}</p><div style="font-size: 0.75rem; color: #64748b;">判定理由：${item.reason || ''}</div></div>`;
+                    });
+                }
+                if (!hasFb && !hasAi) {
+                    html += `<p style="color:#94a3b8; font-size:0.875rem; font-style:italic; margin:0.5rem 0;">（未识别到该汇报人相关内容）</p>`;
+                }
+                html += `</div>`;
+            });
+            html += `<div class="content-block"><div class="block-title">四、总结</div><p>${data.summary || ''}</p></div>`;
+        } else {
+            if (!hasFlatContent) {
+                html += `<div class="content-block" style="background:#fef3c7;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;color:#92400e;">未识别到分条要点与行动项。请确认已上传完整语音转写、PPT 与文献，或重试生成。</div>`;
+            }
+            html += `<div class="content-block"><div class="block-title">二、${sectionTitleLabel}</div><ul style="padding-left: 1.5rem; line-height: 1.8; color: #334155;">`;
+            (data.key_points || []).forEach((kp, index) => {
+                const hasEv = kp.evidence && kp.evidence.length;
+                const traceAttrs = hasEv
+                    ? ` class="trace-target" data-trace-type="flat" data-section="key_points" data-item-index="${index}"`
+                    : '';
+                html += `<li${traceAttrs} style="margin-bottom: 0.75rem; padding: 0.2rem 0.35rem;"><strong>${kp.title}</strong>${kp.detail}</li>`;
+            });
+            html += `</ul></div>`;
+
+            html += `<div class="content-block"><div class="block-title">三、导师反馈与行动项</div>`;
+            html += `<div class="content-block"><div class="block-title" style="font-size:0.9rem;color:#475569;">导师反馈</div>`;
+            (data.advisor_feedback || []).forEach((fb, index) => {
+                const hasEv = fb.evidence && fb.evidence.length;
+                const traceAttrs = hasEv
+                    ? ` class="trace-target" data-trace-type="flat" data-section="advisor_feedback" data-item-index="${index}"`
+                    : '';
+                html += `<p${traceAttrs} style="margin-bottom: 0.5rem; padding: 0.2rem 0.35rem;"><strong>${fb.speaker}：</strong>${fb.content}</p>`;
+            });
+            html += `<div class="block-title" style="font-size:0.9rem;color:#475569;margin-top:0.75rem;">行动项</div>`;
+            (data.action_items || []).forEach((item, index) => {
+                let levelText = item.level || '';
+                if (item.level === 'RED') levelText = '🔴 必须修改';
+                if (item.level === 'YELLOW') levelText = '🟡 建议性意见';
+                if (item.level === 'GREEN') levelText = '🟢 探索性讨论';
+                const hasEv = item.evidence && item.evidence.length;
+                const traceAttrs = hasEv
+                    ? ` class="action-item trace-target" data-trace-type="flat" data-section="action_items" data-item-index="${index}"`
+                    : ` class="action-item"`;
+                html += `<div${traceAttrs} style="margin-bottom: 0.75rem; padding: 0.35rem 0.4rem;"><div style="margin-bottom: 0.5rem;"><span>${levelText}</span></div><p style="font-size: 0.9rem; margin-bottom: 0.5rem;">${item.description}</p><div style="font-size: 0.75rem; color: #64748b;">判定理由：${item.reason || ''}</div></div>`;
+            });
+            html += `</div>`;
+
+            html += `<div class="content-block"><div class="block-title">四、总结</div><p>${data.summary || ''}</p></div>`;
+        }
+
+        if (!recordContent) {
+            paperContent.innerHTML = html;
+            paperContent.setAttribute('contenteditable', 'true');
+        } else {
+            emptyState.style.display = 'none';
+            let body = getRecordBody();
+            if (!body) {
+                body = document.createElement('div');
+                body.id = 'generatedRecord';
+                body.addEventListener('input', () => { pushUndoState(); scheduleAutosave(); });
+                body.addEventListener('focus', () => { lastContentForUndo = body.innerHTML; });
+                recordContent.appendChild(body);
+            }
+            body.innerHTML = html;
+            body.setAttribute('contenteditable', 'true');
+        }
+        initialHTML = html;
+        lastGeneratedHTML = html;
+        savedHTML = html;
+        undoHistory.length = 0;
+        lastContentForUndo = html;
+        if (editorToolbar) {
+            editorToolbar.classList.add('visible');
+        }
+        if (undoBtn) undoBtn.disabled = true;
+
+        const blocks = (getRecordBody() || paperContent).querySelectorAll('.content-block');
+        blocks.forEach((block, index) => {
+            setTimeout(() => {
+                block.classList.add('visible');
+            }, index * 200);
+        });
+        bindTraceHover();
+    }
+
+    let lastContentForUndo = '';
+
+    function scheduleAutosave() {
+        if (!state.hasGenerated) return;
+        const body = getRecordBody() || paperContent;
+        if (!body) return;
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => { savedHTML = body.innerHTML; }, 800);
+    }
+
+    function pushUndoState() {
+        const body = getRecordBody() || paperContent;
+        if (!state.hasGenerated || !body) return;
+        const current = body.innerHTML;
+        if (lastContentForUndo && lastContentForUndo !== current) {
+            undoHistory.push(lastContentForUndo);
+            if (undoHistory.length > UNDO_MAX) undoHistory.shift();
+            if (undoBtn) undoBtn.disabled = false;
+        }
+        lastContentForUndo = current;
+    }
+
+    const editableContainer = () => getRecordBody() || paperContent;
+    if (paperContent) {
+        paperContent.addEventListener('input', () => {
+            pushUndoState();
+            scheduleAutosave();
+        });
+        paperContent.addEventListener('focus', () => { const b = editableContainer(); if (b) lastContentForUndo = b.innerHTML; });
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (!state.hasGenerated) return;
+            const body = editableContainer();
+            if (body) { savedHTML = body.innerHTML; lastContentForUndo = savedHTML; }
+            if (toastSave) {
+                toastSave.classList.add('show');
+                setTimeout(() => toastSave.classList.remove('show'), 1500);
+            }
+        });
+    }
+
+    if (undoBtn) {
+        undoBtn.addEventListener('click', () => {
+            const body = editableContainer();
+            if (!body) return;
+            if (undoHistory.length > 0) {
+                const prev = undoHistory.pop();
+                body.innerHTML = prev;
+                lastContentForUndo = prev;
+            } else {
+                const target = savedHTML || lastGeneratedHTML || initialHTML;
+                if (target) {
+                    body.innerHTML = target;
+                    lastContentForUndo = target;
+                }
+            }
+            undoBtn.disabled = undoHistory.length === 0;
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const body = editableContainer();
+        const focusIn = body && (document.activeElement === body || body.contains(document.activeElement));
+        if (e.ctrlKey && e.key === 'z' && focusIn) {
+            e.preventDefault();
+            if (undoBtn) undoBtn.click();
+        }
+    });
+
+    function applyFormat(cmd, value) {
+        const body = editableContainer();
+        if (!body || !state.hasGenerated) return;
+        body.focus();
+        document.execCommand(cmd, false, value || null);
+        body.focus();
+    }
+
+    if (fontSelect) {
+        fontSelect.addEventListener('change', function () {
+            const v = this.value;
+            if (v && v !== 'inherit') applyFormat('fontName', v);
+        });
+    }
+    if (fontSizeSelect) {
+        fontSizeSelect.addEventListener('change', function () {
+            const v = this.value;
+            if (v) applyFormat('fontSize', v);
+        });
+    }
+    if (boldBtn) {
+        boldBtn.addEventListener('click', () => {
+            applyFormat('bold');
+            boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+        });
+    }
+    if (italicBtn) {
+        italicBtn.addEventListener('click', () => {
+            applyFormat('italic');
+            italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+        });
+    }
+    if (highlightBtn) {
+        highlightBtn.addEventListener('click', () => {
+            applyFormat('backColor', '#fef08a');
+        });
+    }
+    if (paperContent) {
+        paperContent.addEventListener('selectionchange', () => {
+            if (boldBtn) boldBtn.classList.toggle('active', document.queryCommandState('bold'));
+            if (italicBtn) italicBtn.classList.toggle('active', document.queryCommandState('italic'));
+        });
+    }
+
+    function getCleanContentForExport() {
+        const div = document.createElement('div');
+        const body = getRecordBody() || paperContent;
+        div.innerHTML = body ? body.innerHTML : '';
+        div.querySelectorAll('button').forEach(btn => btn.remove());
+        return div.innerHTML;
+    }
+
+    function buildExportHtml() {
+        const style = `
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; color: #0f172a; padding: 40px 48px; }
+                h1 { font-size: 24px; margin: 0 0 8px 0; }
+                .record-meta { font-size: 12px; color: #64748b; margin-bottom: 24px; }
+                .block-title { font-size: 18px; font-weight: 700; margin: 24px 0 12px; color: #111827; }
+                .action-item { background: #f1f5f9; border-left: 4px solid #2563eb; padding: 10px 14px; margin-bottom: 8px; }
+                ul { padding-left: 20px; }
+                p { margin: 6px 0; font-size: 14px; }
+            </style>
+        `;
+        return '<html><head><meta charset="UTF-8"><title>组会纪要</title>' + style + '</head><body>' + getCleanContentForExport() + '</body></html>';
+    }
+
+    function buildWordHtml() {
+        const clean = getCleanContentForExport();
+        const style = `
+            <meta charset="UTF-8">
+            <meta name="ProgId" content="Word.Document">
+            <meta name="Generator" content="研行记">
+            <style>
+                @page { margin: 2cm; }
+                body {
+                    font-family: "宋体", SimSun, serif;
+                    font-size: 12pt;
+                    line-height: 1.75;
+                    color: #000;
+                    margin: 0;
+                    padding: 24pt 28pt;
+                }
+                .record-header { margin-bottom: 24pt; padding-bottom: 12pt; border-bottom: 1pt solid #ddd; }
+                .record-header h1 {
+                    font-family: "黑体", SimHei, sans-serif;
+                    font-size: 18pt;
+                    font-weight: bold;
+                    margin: 0 0 8pt 0;
+                    color: #000;
+                }
+                .record-meta {
+                    font-size: 10.5pt;
+                    color: #666;
+                    margin-top: 6pt;
+                }
+                .content-block { margin-bottom: 20pt; }
+                .block-title {
+                    font-family: "黑体", SimHei, sans-serif;
+                    font-size: 14pt;
+                    font-weight: bold;
+                    margin: 16pt 0 10pt 0;
+                    color: #000;
+                    padding-left: 8pt;
+                    border-left: 3pt solid #2563eb;
+                }
+                .content-block ul { padding-left: 24pt; margin: 8pt 0; }
+                .content-block li { margin-bottom: 8pt; }
+                .content-block p { margin: 6pt 0; font-size: 12pt; }
+                .action-item {
+                    background: #f8fafc;
+                    border-left: 4pt solid #2563eb;
+                    padding: 10pt 12pt;
+                    margin-bottom: 10pt;
+                }
+                .action-item p { margin: 4pt 0; }
+            </style>
+        `;
+        return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">' +
+            '<head><title>组会纪要</title>' + style + '</head><body>' + clean + '</body></html>';
+    }
+
+    if (exportMenuBtn && exportMenu && exportPdfAction && exportWordAction) {
+        exportMenuBtn.addEventListener('click', () => {
+            if (!state.hasGenerated) return;
+            const isOpen = exportMenu.style.display === 'block';
+            exportMenu.style.display = isOpen ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!exportMenuBtn || !exportMenu) return;
+            if (exportMenu.contains(e.target) || exportMenuBtn.contains(e.target)) return;
+            exportMenu.style.display = 'none';
+        });
+
+        exportPdfAction.addEventListener('click', () => {
+            if (!state.hasGenerated) return;
+            const w = window.open('', '_blank');
+            if (!w) {
+                alert('浏览器阻止了弹窗，请允许弹窗后重试导出 PDF');
+                return;
+            }
+            w.document.write(buildExportHtml());
+            w.document.close();
+            w.focus();
+            w.print();
+            exportMenu.style.display = 'none';
+        });
+
+        exportWordAction.addEventListener('click', () => {
+            if (!state.hasGenerated) return;
+            const content = buildWordHtml();
+            const blob = new Blob(['\ufeff' + content], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '组会纪要.doc';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            exportMenu.style.display = 'none';
+        });
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function parsePptPageTextMap(pptText) {
+        const map = {};
+        const t = pptText || '';
+        if (!t) return map;
+        const parts = t.split(/\[PPT 第(\d+)页\]/);
+        for (let i = 1; i < parts.length; i += 2) {
+            const pageNum = parseInt(parts[i], 10) || ((i + 1) / 2);
+            const body = (parts[i + 1] || '').trim();
+            if (pageNum) map[pageNum] = body;
+        }
+        return map;
+    }
+
+    function extractPptPagesFromItem(item, raw) {
+        const evidence = (item && item.evidence) ? item.evidence : [];
+        const pages = [];
+        const pushPage = (p) => {
+            if (!p || pages.includes(p)) return;
+            pages.push(p);
+        };
+        evidence.forEach(ev => {
+            if (!ev || ev.type !== 'ppt') return;
+            const loc = String(ev.location || '');
+            const m = loc.match(/PPT\s*第\s*(\d+)\s*页/);
+            if (m) pushPage(parseInt(m[1], 10));
+        });
+
+        // 若没有显式页码，则用 quote 在 ppt_text 中做一次兜底匹配
+        if (!pages.length) {
+            const pageTextMap = parsePptPageTextMap((raw || {}).ppt_text || '');
+            evidence.forEach(ev => {
+                if (!ev || ev.type !== 'ppt') return;
+                const quote = String(ev.quote || '').trim();
+                if (!quote) return;
+                Object.keys(pageTextMap).forEach(k => {
+                    const pageNum = parseInt(k, 10);
+                    if ((pageTextMap[pageNum] || '').includes(quote)) pushPage(pageNum);
+                });
+            });
+        }
+        return pages.slice(0, 2); // 只显示前 1~2 页
+    }
+
+    function buildPptTraceCard(pageNum, raw) {
+        const slides = (raw.ppt_slides || []);
+        const slide = slides.find(s => (s.page || 0) === pageNum);
+        const pageTextMap = parsePptPageTextMap(raw.ppt_text || '');
+        const text = (pageTextMap[pageNum] || '').trim();
+        const textSnippet = text ? escapeHtml(text.slice(0, 160)) + (text.length > 160 ? '...' : '') : '该页暂无可提取文本';
+        const img = slide && slide.images && slide.images.length ? slide.images[0] : '';
+        const openBtn = img
+            ? `<a href="${img}" target="_blank" rel="noopener" style="font-size:0.72rem;color:#2563eb;text-decoration:none;">点击查看该页大图 ↗</a>`
+            : `<span style="font-size:0.72rem;color:#94a3b8;">未生成整页截图（可安装 LibreOffice）</span>`;
+        const imgHtml = img
+            ? `<img src="${img}" alt="PPT第${pageNum}页" style="width:100%;border-radius:0.5rem;border:1px solid #e2e8f0;margin-bottom:0.5rem;">`
+            : '';
+        return `
+            <div style="border:1px solid #dbeafe;border-radius:0.65rem;padding:0.6rem;margin-bottom:0.65rem;background:#f8fbff;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                    <strong style="font-size:0.82rem;color:#1d4ed8;">PPT 第${pageNum}页</strong>
+                    ${openBtn}
+                </div>
+                ${imgHtml}
+                <div style="font-size:0.76rem;color:#334155;line-height:1.5;">${textSnippet}</div>
+            </div>
+        `;
+    }
+
+    function showSourceFallback() {
+        previewTitle.textContent = '素材溯源';
+        if (previewMeta) previewMeta.textContent = '该条暂无溯源';
+        previewContent.style.alignItems = 'flex-start';
+        previewContent.style.justifyContent = 'flex-start';
+        previewContent.style.background = '#ffffff';
+        previewContent.classList.add('preview-content-scroll');
+        previewContent.innerHTML = `
+            <div class="preview-content-inner" style="width:100%;padding:0.85rem;box-sizing:border-box;">
+                <div style="padding:0.75rem;border-radius:0.6rem;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:0.8rem;line-height:1.6;">
+                    <div style="font-weight:600;color:#334155;margin-bottom:0.35rem;">无溯源内容</div>
+                    当前这句话/要点暂无对应出处。
+                </div>
+            </div>
+        `;
+    }
+
+    /** 在完整转写原文中高亮 evidence 的 quote；精确匹配失败时尝试多段子串（前 80/60/45/30/20 字或后段），提高命中率 */
+    function buildFullTranscriptWithHighlights(fullTranscript, transcriptEvidences) {
+        if (!fullTranscript || typeof fullTranscript !== 'string') {
+            const fallback = (transcriptEvidences || []).map(ev => escapeHtml(String(ev.quote || ev.context || '').trim().slice(0, 200))).filter(Boolean).join(' … ');
+            return '<div style="font-size:0.76rem;color:#64748b;">' + (fallback || '（无原文）') + '</div>';
+        }
+        const raw = fullTranscript;
+        let escaped = escapeHtml(raw);
+        const quotes = [];
+        (transcriptEvidences || []).forEach(ev => {
+            const q = String(ev.quote || ev.context || '').trim();
+            if (q && q.length >= 5) quotes.push(q);
+        });
+        const uniq = [...new Set(quotes)].sort((a, b) => b.length - a.length);
+        const tryHighlight = function (sub) {
+            if (!sub || sub.length < 8) return false;
+            const es = escapeHtml(sub);
+            const idx = escaped.indexOf(es);
+            if (idx === -1) return false;
+            const endIdx = idx + es.length;
+            escaped = escaped.slice(0, idx) + '<span class="source-highlight">' + es + '</span>' + escaped.slice(endIdx);
+            return true;
+        };
+        for (const q of uniq) {
+            const eq = escapeHtml(q);
+            let idx = escaped.indexOf(eq);
+            if (idx !== -1) {
+                const endIdx = idx + eq.length;
+                escaped = escaped.slice(0, idx) + '<span class="source-highlight">' + eq + '</span>' + escaped.slice(endIdx);
+                continue;
+            }
+            const prefixLengths = [80, 60, 45, 30, 20, 15];
+            let done = false;
+            for (const len of prefixLengths) {
+                if (q.length < len) continue;
+                if (tryHighlight(q.slice(0, len))) { done = true; break; }
+            }
+            if (done) continue;
+            if (q.length > 25 && tryHighlight(q.slice(-40))) continue;
+            const segments = q.split(/[，。；？！\n]+/).filter(s => s.trim().length >= 8);
+            for (const seg of segments) {
+                if (tryHighlight(seg.trim())) break;
+            }
+        }
+        return '<div class="transcript-original-block" style="font-size:0.76rem;color:#334155;line-height:1.7;white-space:pre-wrap;word-break:break-word;">' + escaped + '</div>';
+    }
+
+    function buildPaperTraceCard(ev) {
+        const loc = escapeHtml(String(ev.location || '文献').trim());
+        const quote = escapeHtml(String(ev.quote || '').trim().slice(0, 280));
+        return `
+            <div style="border:1px solid #fed7aa;border-radius:0.65rem;padding:0.6rem;margin-bottom:0.65rem;background:#fff7ed;">
+                <div style="font-size:0.82rem;font-weight:600;color:#c2410c;margin-bottom:0.4rem;">${loc}</div>
+                <div style="font-size:0.76rem;color:#334155;line-height:1.5;">${quote || '（无引用片段）'}</div>
+            </div>
+        `;
+    }
+
+    function showSourceDisplay(item) {
+        if (!item || !currentRecord) {
+            showSourceFallback();
+            return;
+        }
+        const raw = currentRecord.raw_sources || {};
+        const evidence = (item.evidence && Array.isArray(item.evidence)) ? item.evidence : [];
+        const transcriptEvidences = evidence.filter(ev => ev && ev.type === 'transcript');
+        const pptPages = [];
+        const paperCards = [];
+        evidence.forEach(ev => {
+            if (!ev || !ev.type) return;
+            if (ev.type === 'ppt') {
+                const loc = String(ev.location || '');
+                const m = loc.match(/PPT\s*第\s*(\d+)\s*页/);
+                if (m) pptPages.push(parseInt(m[1], 10));
+            } else if (ev.type === 'paper') {
+                paperCards.push(buildPaperTraceCard(ev));
+            }
+        });
+        if (!pptPages.length) {
+            const pages = extractPptPagesFromItem(item, raw);
+            pptPages.push(...pages);
+        }
+        const pptCards = pptPages.slice(0, 2).map(p => buildPptTraceCard(p, raw)).join('');
+        const fullTranscript = (raw.transcript || raw.transcript_original || '').trim();
+        const hasTranscriptBlock = fullTranscript.length > 0 || transcriptEvidences.length > 0;
+        const hasAny = hasTranscriptBlock || pptCards.length > 0 || paperCards.length > 0;
+        if (!hasAny) {
+            showSourceFallback();
+            return;
+        }
+        previewTitle.textContent = '素材溯源';
+        const parts = [];
+        if (transcriptEvidences.length || fullTranscript) parts.push('语音转录');
+        if (pptPages.length) parts.push('PPT ' + pptPages.slice(0, 2).map(p => '第' + p + '页').join('、'));
+        if (paperCards.length) parts.push('文献');
+        if (previewMeta) previewMeta.textContent = parts.join(' · ') || '出处';
+        previewContent.style.alignItems = 'flex-start';
+        previewContent.style.justifyContent = 'flex-start';
+        previewContent.style.background = '#ffffff';
+        previewContent.classList.add('preview-content-scroll');
+        const transcriptBlockHtml = hasTranscriptBlock
+            ? `<div style="margin-bottom:0.75rem;"><div style="font-size:0.82rem;font-weight:600;color:#047857;margin-bottom:0.4rem;">语音转录原文</div><div style="max-height:320px;overflow-y:auto;overflow-x:hidden;border:1px solid #d1fae5;border-radius:0.5rem;padding:0.6rem;background:#f0fdf4;">${buildFullTranscriptWithHighlights(fullTranscript, transcriptEvidences)}</div></div>`
+            : '';
+        previewContent.innerHTML = `
+            <div class="preview-content-inner" style="width:100%;padding:0.75rem;box-sizing:border-box;">
+                ${transcriptBlockHtml}
+                ${pptCards}
+                ${paperCards.join('')}
+            </div>
+        `;
+        previewContent.scrollTop = 0;
+        const firstHighlight = previewContent.querySelector('.source-highlight');
+        if (firstHighlight) {
+            firstHighlight.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+    }
+
+    window.showSource = function(section, index) {
+        if (!currentRecord) { alert('暂无可溯源的数据'); return; }
+        const list = currentRecord[section] || [];
+        const item = list[index];
+        showSourceDisplay(item);
+    };
+
+    window.showSourceByReporter = function(reporterIndex, section, itemIndex) {
+        if (!currentRecord || !currentRecord.by_reporter) { alert('暂无可溯源的数据'); return; }
+        const block = currentRecord.by_reporter[reporterIndex];
+        if (!block) return;
+        const list = block[section] || [];
+        const item = list[itemIndex];
+        showSourceDisplay(item);
+    };
+
+    let activeTraceTarget = null;
+    let lastTraceKey = '';
+    function setActiveTraceTarget(el) {
+        if (activeTraceTarget && activeTraceTarget !== el) {
+            activeTraceTarget.classList.remove('trace-active');
+        }
+        activeTraceTarget = el || null;
+        if (activeTraceTarget) activeTraceTarget.classList.add('trace-active');
+    }
+    function triggerTraceFromElement(el) {
+        if (!el) return;
+        const traceType = el.getAttribute('data-trace-type');
+        const section = el.getAttribute('data-section');
+        const itemIndex = parseInt(el.getAttribute('data-item-index') || '-1', 10);
+        if (!section || itemIndex < 0) return;
+        const repIdx = parseInt(el.getAttribute('data-reporter-index') || '-1', 10);
+        const traceKey = `${traceType}|${repIdx}|${section}|${itemIndex}`;
+        if (traceKey === lastTraceKey) return;
+        lastTraceKey = traceKey;
+        if (traceType === 'by' && repIdx >= 0) {
+            window.showSourceByReporter(repIdx, section, itemIndex);
+        } else {
+            window.showSource(section, itemIndex);
+        }
+    }
+    function bindTraceHover() {
+        const container = getRecordBody() || paperContent;
+        if (!container || container.dataset.traceBound === '1') return;
+        container.dataset.traceBound = '1';
+        container.addEventListener('mouseover', function (e) {
+            const el = e.target.closest('.trace-target');
+            if (!el || !container.contains(el)) return;
+            setActiveTraceTarget(el);
+            triggerTraceFromElement(el);
+        });
+        container.addEventListener('click', function (e) {
+            const el = e.target.closest('.trace-target');
+            if (!el || !container.contains(el)) return;
+            setActiveTraceTarget(el);
+            triggerTraceFromElement(el);
+        });
+    }
+    window.showPreview = function(type, loc) {
+        let content = '';
+        let title = '';
+
+        if (type === 'ppt') {
+            title = `PPT Page ${loc}`;
+            content = `
+                <div style="width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">📊</div>
+                    <div style="font-size: 0.875rem; color: #334155; font-weight: bold;">PPT 第 ${loc} 页预览</div>
+                </div>
+            `;
+        } else if (type === 'audio') {
+            title = `Audio Clip ${loc}`;
+            content = `
+                <div style="width: 100%; height: 100%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">🎙️</div>
+                    <div style="font-size: 0.875rem; color: #334155; margin-top: 1rem;">正在播放: ${loc}</div>
+                </div>
+            `;
+        } else if (type === 'pdf') {
+            title = `Reference Page ${loc}`;
+            content = `
+                <div style="width: 100%; height: 100%; background: #fff; padding: 1.5rem;">
+                    <div style="font-size: 0.875rem; color: #334155;">文献第 ${loc} 页预览</div>
+                </div>
+            `;
+        }
+
+        previewTitle.textContent = title;
+        previewContent.innerHTML = content;
+    };
+</script>
